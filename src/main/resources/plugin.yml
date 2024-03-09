@@ -1,0 +1,4 @@
+name: EverythingDragon
+version: '${project.version}'
+main: mod.zenith.everythingdragon.EverythingDragon
+api-version: '1.20'
