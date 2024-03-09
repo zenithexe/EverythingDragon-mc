@@ -2,3 +2,8 @@ name: EverythingDragon
 version: '${project.version}'
 main: mod.zenith.everythingdragon.EverythingDragon
 api-version: '1.20'
+author: zenithGG
+description: This plugin turns everything living mob in your world to an Ender Dragon
+website: https://www.youtube.com/@zenithhGG
+
+
