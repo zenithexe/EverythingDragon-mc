@@ -5,7 +5,9 @@ import org.bukkit.World;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.EnderDragonChangePhaseEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
@@ -14,10 +16,11 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.world.EntitiesUnloadEvent;
 
 
+import java.security.Permission;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.bukkit.Bukkit.getOnlinePlayers;
+import static org.bukkit.Bukkit.*;
 
 
 public final class EverythingDragon extends JavaPlugin implements Listener {
@@ -86,42 +89,47 @@ public final class EverythingDragon extends JavaPlugin implements Listener {
                         getLogger().info("Nearest Player :"+nearestPlayer);
                     }
                 }
+                else{
+                    e.getEntity().remove();
+                }
 
             } else if (env == World.Environment.THE_END) {
                 if (this.countDragon(e.getLocation().getWorld())<=endDragLimit) {
-                        // Replace every spawned mob with Ender Dragon
+                    if(e.getEntity().getType()!=EntityType.ENDER_DRAGON) {
                         entity.remove();
                         entity.getWorld().spawnEntity(entity.getLocation(), EntityType.ENDER_DRAGON);
                     }
                     if (entity.getType()==EntityType.ENDER_DRAGON) {
-                        getLogger().info("-----Dragon Spawned at "+entity.getLocation()+(++dragCount));
                         EnderDragon dragon = (EnderDragon) entity;
-                        Player nearestPlayer = findNearestPlayer(entity.getLocation());
                         dragon.setAI(true);
-                        dragon.setPhase(EnderDragon.Phase.BREATH_ATTACK);
-                        dragon.setTarget(nearestPlayer);
-                        getLogger().info("Nearest Player :"+nearestPlayer);
+                        dragon.setPhase(EnderDragon.Phase.CIRCLING);
+                        dragon.setTarget(null);
                     }
+
+                }
+                else {
+                    e.getEntity().remove();
                 }
             }
         }
-
     }
+
+
 
     @EventHandler
     public void onEnderDragonChangePhase(EnderDragonChangePhaseEvent e){
-        getLogger().info("Phase Change Triggered:"+e.getCurrentPhase()+"-->"+e.getNewPhase());
-        if(e.getEntity().getWorld().getEnvironment() != World.Environment.NORMAL) {
-            if(e.getNewPhase() == EnderDragon.Phase.FLY_TO_PORTAL || e.getCurrentPhase()== EnderDragon.Phase.FLY_TO_PORTAL){
-                e.setNewPhase(EnderDragon.Phase.BREATH_ATTACK);
+            getLogger().info("Phase Change Triggered:"+e.getEntity().getWorld().getEnvironment()+"::"+ e.getCurrentPhase() + "-->" + e.getNewPhase());
+            if (e.getEntity().getWorld().getEnvironment() != World.Environment.THE_END) {
+                getLogger().info("Phase Change Triggered:" + e.getCurrentPhase() + "-->" + e.getNewPhase());
+                if (e.getNewPhase() == EnderDragon.Phase.FLY_TO_PORTAL || e.getCurrentPhase() == EnderDragon.Phase.FLY_TO_PORTAL) {
+                    e.setNewPhase(EnderDragon.Phase.BREATH_ATTACK);
+                }
             }
-        }
-
     }
 
     private void killEntities() {
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "/kill @e[type=!minecraft:player,type=!minecraft:cow,type=!minecraft:sheep,type=!minecraft:blaze,type=!minecraft:enderman,type=!minecraft:piglin]");
-        
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "/kill @e[type=!minecraft:player,type=!minecraft:cow,type=!minecraft:sheep,type=!minecraft:blaze,type=!minecraft:enderman]");
+        getLogger().info("===================Killed===================");
     }
 
     private  int countDragon(World w){
@@ -131,7 +139,7 @@ public final class EverythingDragon extends JavaPlugin implements Listener {
                 count++;
             }
         }
-        getLogger().info("Dragon Count :"+count);
+//        getLogger().info("Dragon Count :"+count);
         return count;
     }
 
@@ -146,6 +154,16 @@ public final class EverythingDragon extends JavaPlugin implements Listener {
             }
         }
         return nearestPlayer;
+    }
+
+    @EventHandler
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent e){
+        if(e.getPlayer().getWorld().getEnvironment() == World.Environment.THE_END){
+            Bukkit.getScheduler().cancelTasks(this);
+        }
+        if(e.getPlayer().getWorld().getEnvironment() != World.Environment.THE_END){
+            Bukkit.getScheduler().runTaskTimer(this, this::killEntities, 20L, 20L * 60);
+        }
     }
 }
 
